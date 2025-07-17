@@ -6,8 +6,8 @@ from pydantic import BaseModel
 from typing import List
 from datetime import date
 
-from .models import Ammo
-from .database import get_db, Base, engine
+from models import Ammo
+from database import get_db, Base, engine
 
 app = FastAPI()
 
