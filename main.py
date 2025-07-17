@@ -4,8 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import List
 from datetime import date
 
-from .models import Ammo, Base
-from .database import engine, SessionLocal
+from models import Ammo, Base
+from database import engine, SessionLocal
 from pydantic import BaseModel
 
 app = FastAPI()
