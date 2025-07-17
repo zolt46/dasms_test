@@ -4,5 +4,4 @@ sqlalchemy
 asyncpg
 pydantic
 python-dotenv
-# 아래를 명시적으로 추가 (중요!)
-psycopg2-binary==2.9.9; sys_platform == "never"
+
