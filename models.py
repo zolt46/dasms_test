@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Date
-from database import Base
+from .database import Base
 
 class Ammo(Base):
     __tablename__ = "ammo"
@@ -10,8 +10,8 @@ class Ammo(Base):
     quantity = Column(Integer)
     location = Column(String)
     condition = Column(String)
-    supplied_at = Column(Date)
-    consumed_at = Column(Date)
+    supplied_at = Column(Date, nullable=True)
+    consumed_at = Column(Date, nullable=True)
     supply_type = Column(String)
     reason = Column(String)
     notes = Column(String)

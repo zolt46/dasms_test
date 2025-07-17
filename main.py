@@ -1,17 +1,16 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 from typing import List
 from datetime import date
 
-from models import Ammo
-from database import get_db, Base, engine
+from .models import Ammo, Base
+from .database import engine, SessionLocal
+from pydantic import BaseModel
 
 app = FastAPI()
 
-origins = ["*"]  # 실제 운영 시 도메인 제한 필요
+origins = ["*"]  # CORS 허용
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -20,44 +19,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-class AmmoIn(BaseModel):
+class AmmoCreate(BaseModel):
     type: str
     category: str
     quantity: int
     location: str
     condition: str
-    supplied_at: date
+    supplied_at: date | None = None
     consumed_at: date | None = None
     supply_type: str
     reason: str
     notes: str
 
+async def get_db():
+    async with SessionLocal() as session:
+        yield session
+
 @app.on_event("startup")
-async def startup():
-    try:
-        print("Trying DB connection...")
-        async with engine.begin() as conn:
-            print("DB connected.")
-            await conn.run_sync(Base.metadata.create_all)
-    except Exception as e:
-        print(f"❌ DB 연결 실패: {e}")
-        raise
-
-@app.get("/api/ammo", response_model=List[AmmoIn])
-async def get_ammo(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Ammo))
-    return result.scalars().all()
-
-@app.post("/api/ammo")
-async def add_ammo(item: AmmoIn, db: AsyncSession = Depends(get_db)):
-    new_ammo = Ammo(**item.dict())
-    db.add(new_ammo)
-    await db.commit()
-    return {"status": "ok"}
+async def on_startup():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
 @app.post("/api/ammo/bulk")
-async def bulk_add_ammo(items: List[AmmoIn], db: AsyncSession = Depends(get_db)):
-    for item in items:
-        db.add(Ammo(**item.dict()))
+async def create_ammo_bulk(items: List[AmmoCreate], db: AsyncSession = Depends(get_db)):
+    db.add_all([Ammo(**item.dict()) for item in items])
     await db.commit()
-    return {"status": "bulk ok"}
+    return {"status": "ok"}
