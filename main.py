@@ -34,8 +34,14 @@ class AmmoIn(BaseModel):
 
 @app.on_event("startup")
 async def startup():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    try:
+        print("Trying DB connection...")
+        async with engine.begin() as conn:
+            print("DB connected.")
+            await conn.run_sync(Base.metadata.create_all)
+    except Exception as e:
+        print(f"❌ DB 연결 실패: {e}")
+        raise
 
 @app.get("/api/ammo", response_model=List[AmmoIn])
 async def get_ammo(db: AsyncSession = Depends(get_db)):
