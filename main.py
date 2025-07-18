@@ -52,21 +52,29 @@ class AmmoCreate(BaseModel):
 
 # API 라우터
 
-@app.post("/api/firearm", status_code=201)
-async def create_firearm(data: PersonFirearmCreate, session: AsyncSession = Depends(get_session)):
-    new_entry = PersonFirearm(**data.dict())
-    session.add(new_entry)
-    await session.commit()
-    return {"status": "created"}
+@app.get("/api/personnel")
+async def get_personnel(session: AsyncSession = Depends(get_session)):
+    result = await session.execute(select(PersonnelWeapon))
+    people = result.scalars().all()
+    return [
+        {
+            "name": p.name,
+            "rank": p.rank,
+            "serial_number": p.serial_number,
+            "unit": p.unit,
+            "position": p.position,
+            "system_id": p.system_id,
+            "system_password": p.system_password,
+            "system_permission": p.system_permission
+        }
+        for p in people
+    ]
 
-@app.post("/api/ammo", status_code=201)
-async def create_ammo(data: AmmoCreate, session: AsyncSession = Depends(get_session)):
-    new_entry = Ammo(**data.dict())
-    session.add(new_entry)
+@app.post("/api/personnel/bulk")
+async def save_personnel(data: List[dict], session: AsyncSession = Depends(get_session)):
+    for item in data:
+        person = PersonnelWeapon(**item, weapon_type="K2", weapon_serial="TEMP", weapon_location="무기고A", weapon_condition="양호", fingerprint="placeholder")
+        session.add(person)
     await session.commit()
-    return {"status": "created"}
+    return {"status": "ok"}
 
-@app.get("/api/ammo", response_model=List[AmmoCreate])
-async def get_ammo(session: AsyncSession = Depends(get_session)):
-    result = await session.execute(select(Ammo))
-    return result.scalars().all()
