@@ -1,80 +1,69 @@
-from fastapi import FastAPI, Depends, HTTPException
+# main.py
+from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from database import async_session, engine, Base
-from models import PersonFirearm, Ammo
-from typing import List
+from fastapi.middleware.cors import CORSMiddleware
+from database import get_async_session
+from models import PersonnelWeapon
+from sqlalchemy import select
 from pydantic import BaseModel
-from datetime import datetime
+from typing import List
 
 app = FastAPI()
 
-# 초기 테이블 생성
-@app.on_event("startup")
-async def on_startup():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+# CORS 허용
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# 의존성 주입
-async def get_session() -> AsyncSession:
-    async with async_session() as session:
-        yield session
-
-# Pydantic 모델
-class PersonFirearmCreate(BaseModel):
+class PersonnelInput(BaseModel):
     name: str
     rank: str
-    service_number: str
+    serial_number: str
     unit: str
     position: str
-    firearm_type: str
-    serial_number: str
-    location: str
-    status: str
-    reason: str | None = None
-    notes: str | None = None
     system_id: str
-    system_pw: str
-    access_level: str
-    fingerprint: str
+    system_password: str
+    system_permission: str
 
-class AmmoCreate(BaseModel):
-    type: str
-    category: str
-    quantity: int
-    location: str
-    condition: str
-    supplied_at: datetime | None = None
-    consumed_at: datetime | None = None
-    supply_type: str
-    reason: str | None = None
-    notes: str | None = None
+@app.get("/api/person", response_model=List[PersonnelInput])
+async def get_personnel(session: AsyncSession = Depends(get_async_session)):
+    query = await session.execute(select(
+        PersonnelWeapon.name,
+        PersonnelWeapon.rank,
+        PersonnelWeapon.serial_number,
+        PersonnelWeapon.unit,
+        PersonnelWeapon.position,
+        PersonnelWeapon.system_id,
+        PersonnelWeapon.system_password,
+        PersonnelWeapon.system_permission
+    ))
+    rows = query.fetchall()
+    return [dict(row._mapping) for row in rows]
 
-# API 라우터
-
-@app.get("/api/personnel")
-async def get_personnel(session: AsyncSession = Depends(get_session)):
-    result = await session.execute(select(PersonnelWeapon))
-    people = result.scalars().all()
-    return [
-        {
-            "name": p.name,
-            "rank": p.rank,
-            "serial_number": p.serial_number,
-            "unit": p.unit,
-            "position": p.position,
-            "system_id": p.system_id,
-            "system_password": p.system_password,
-            "system_permission": p.system_permission
-        }
-        for p in people
-    ]
-
-@app.post("/api/personnel/bulk")
-async def save_personnel(data: List[dict], session: AsyncSession = Depends(get_session)):
-    for item in data:
-        person = PersonnelWeapon(**item, weapon_type="K2", weapon_serial="TEMP", weapon_location="무기고A", weapon_condition="양호", fingerprint="placeholder")
-        session.add(person)
+@app.post("/api/person")
+async def create_personnel(person: PersonnelInput, session: AsyncSession = Depends(get_async_session)):
+    new_entry = PersonnelWeapon(
+        name=person.name,
+        rank=person.rank,
+        serial_number=person.serial_number,
+        unit=person.unit,
+        position=person.position,
+        system_id=person.system_id,
+        system_password=person.system_password,
+        system_permission=person.system_permission,
+        # 나머지는 기본값 (빈 문자열) 처리
+        weapon_type='기타',
+        weapon_serial='-',
+        weapon_location='기타',
+        weapon_condition='기타',
+        weapon_reason=None,
+        weapon_note=None,
+        fingerprint='default_fingerprint'  # 추후 별도로 업데이트 가능
+    )
+    session.add(new_entry)
     await session.commit()
-    return {"status": "ok"}
-
+    return {"status": "success"}
