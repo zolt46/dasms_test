@@ -1,9 +1,30 @@
+# models.py
 from sqlalchemy import Column, Integer, String, Text, CheckConstraint, TIMESTAMP
 from sqlalchemy.orm import declarative_base
 from pydantic import BaseModel
 from typing import Optional
 
 Base = declarative_base()
+
+class PersonnelWeapon(Base):
+    __tablename__ = "personnel_weapon"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    rank = Column(String, nullable=False)
+    serial_number = Column(String, nullable=False)
+    unit = Column(String, nullable=False)
+    position = Column(String, nullable=False)
+    weapon_type = Column(String, nullable=False)
+    weapon_serial = Column(String, nullable=False)
+    weapon_location = Column(String, nullable=False)
+    weapon_condition = Column(String, nullable=False)
+    weapon_reason = Column(Text, nullable=True)
+    weapon_note = Column(Text, nullable=True)
+    system_id = Column(String, nullable=False)
+    system_password = Column(String, nullable=False)
+    system_permission = Column(String, nullable=False)
+    fingerprint = Column(String, nullable=False)
 
 class Ammo(Base):
     __tablename__ = "ammo"

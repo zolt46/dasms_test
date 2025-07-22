@@ -1,10 +1,11 @@
-# ✅ main.py
-from fastapi import FastAPI, Depends
+# main.py
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, insert
 from typing import List
 from pydantic import BaseModel
+from datetime import datetime
 
 from database import get_async_session
 from models import PersonnelWeapon, Ammo, AmmoCreate
