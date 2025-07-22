@@ -1,16 +1,16 @@
-# main.py
-from fastapi import FastAPI, HTTPException, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
+# ✅ main.py
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from database import get_async_session
-from models import PersonnelWeapon
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from pydantic import BaseModel
 from typing import List
+from pydantic import BaseModel
+
+from database import get_async_session
+from models import PersonnelWeapon, Ammo
 
 app = FastAPI()
 
-# CORS 허용
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -19,6 +19,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# === Pydantic Schemas ===
 class PersonnelInput(BaseModel):
     name: str
     rank: str
@@ -28,42 +29,60 @@ class PersonnelInput(BaseModel):
     system_id: str
     system_password: str
     system_permission: str
+    weapon_type: str = "기타"
+    weapon_serial: str = "-"
+    weapon_location: str = "기타"
+    weapon_condition: str = "기타"
+    weapon_reason: str | None = None
+    weapon_note: str | None = None
+    fingerprint: str = "default"
 
-@app.get("/api/person", response_model=List[PersonnelInput])
+class AmmoInput(BaseModel):
+    name: str
+    category: str
+    quantity: int
+    location: str
+    condition: str
+    supply_type: str
+    supplied_at: str | None = None
+    consumed_at: str | None = None
+    reason: str | None = None
+    notes: str | None = None
+
+# === API Routes ===
+
+@app.get("/api/personnel", response_model=List[PersonnelInput])
 async def get_personnel(session: AsyncSession = Depends(get_async_session)):
-    query = await session.execute(select(
-        PersonnelWeapon.name,
-        PersonnelWeapon.rank,
-        PersonnelWeapon.serial_number,
-        PersonnelWeapon.unit,
-        PersonnelWeapon.position,
-        PersonnelWeapon.system_id,
-        PersonnelWeapon.system_password,
-        PersonnelWeapon.system_permission
-    ))
-    rows = query.fetchall()
-    return [dict(row._mapping) for row in rows]
+    result = await session.execute(select(PersonnelWeapon))
+    return [row._mapping for row in result.fetchall()]
 
-@app.post("/api/person")
-async def create_personnel(person: PersonnelInput, session: AsyncSession = Depends(get_async_session)):
-    new_entry = PersonnelWeapon(
-        name=person.name,
-        rank=person.rank,
-        serial_number=person.serial_number,
-        unit=person.unit,
-        position=person.position,
-        system_id=person.system_id,
-        system_password=person.system_password,
-        system_permission=person.system_permission,
-        # 나머지는 기본값 (빈 문자열) 처리
-        weapon_type='기타',
-        weapon_serial='-',
-        weapon_location='기타',
-        weapon_condition='기타',
-        weapon_reason=None,
-        weapon_note=None,
-        fingerprint='default_fingerprint'  # 추후 별도로 업데이트 가능
-    )
-    session.add(new_entry)
+@app.post("/api/personnel/bulk")
+async def save_personnel_bulk(data: List[PersonnelInput], session: AsyncSession = Depends(get_async_session)):
+    for item in data:
+        session.add(PersonnelWeapon(**item.dict()))
     await session.commit()
-    return {"status": "success"}
+    return {"status": "ok"}
+
+@app.get("/api/ammo", response_model=List[AmmoInput])
+async def get_ammo(session: AsyncSession = Depends(get_async_session)):
+    result = await session.execute(select(Ammo))
+    return [row._mapping for row in result.fetchall()]
+
+@app.post("/api/ammo/bulk")
+async def save_ammo_bulk(data: List[AmmoInput], session: AsyncSession = Depends(get_async_session)):
+    for item in data:
+        session.add(Ammo(**item.dict()))
+    await session.commit()
+    return {"status": "ok"}
+
+@app.get("/api/firearm", response_model=List[PersonnelInput])
+async def get_firearm(session: AsyncSession = Depends(get_async_session)):
+    result = await session.execute(select(PersonnelWeapon))
+    return [row._mapping for row in result.fetchall()]
+
+@app.post("/api/firearm")
+async def save_firearm(data: List[PersonnelInput], session: AsyncSession = Depends(get_async_session)):
+    for item in data:
+        session.add(PersonnelWeapon(**item.dict()))
+    await session.commit()
+    return {"status": "ok"}
