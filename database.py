@@ -13,3 +13,8 @@ async_session = sessionmaker(
 )
 
 Base = declarative_base()
+
+# ✅ 여기에 추가
+async def get_async_session() -> AsyncSession:
+    async with async_session() as session:
+        yield session
