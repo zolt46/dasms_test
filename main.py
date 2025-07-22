@@ -69,11 +69,31 @@ async def get_ammo(session: AsyncSession = Depends(get_async_session)):
     return [row._mapping for row in result.fetchall()]
 
 @app.post("/api/ammo/bulk")
-async def save_ammo_bulk(data: List[AmmoInput], session: AsyncSession = Depends(get_async_session)):
-    for item in data:
-        session.add(Ammo(**item.dict()))
-    await session.commit()
-    return {"status": "ok"}
+async def save_ammo_bulk(data: List[AmmoCreate], session: AsyncSession = Depends(get_async_session)):
+    try:
+        # 날짜 문자열을 datetime 객체로 변환
+        converted_data = []
+        for d in data:
+            converted_data.append({
+                "name": d.name,
+                "category": d.category,
+                "quantity": d.quantity,
+                "location": d.location,
+                "condition": d.condition,
+                "supply_type": d.supply_type,
+                "supplied_at": datetime.strptime(d.supplied_at, "%Y-%m-%d") if d.supplied_at else None,
+                "consumed_at": datetime.strptime(d.consumed_at, "%Y-%m-%d") if d.consumed_at else None,
+                "reason": d.reason,
+                "notes": d.notes
+            })
+
+        stmt = insert(Ammo).values(converted_data)
+        await session.execute(stmt)
+        await session.commit()
+        return {"message": "저장 완료", "count": len(converted_data)}
+    except Exception as e:
+        await session.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/firearm", response_model=List[PersonnelInput])
 async def get_firearm(session: AsyncSession = Depends(get_async_session)):

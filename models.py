@@ -1,42 +1,33 @@
-# ✅ models.py
-from sqlalchemy import Column, Integer, Text
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Integer, String, Text, CheckConstraint, TIMESTAMP
+from sqlalchemy.orm import declarative_base
+from pydantic import BaseModel
+from typing import Optional
 
 Base = declarative_base()
 
-class PersonnelWeapon(Base):
-    __tablename__ = "personnel_weapon"
-    __table_args__ = {'extend_existing': True}
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(Text, nullable=False)
-    rank = Column(Text, nullable=False)
-    serial_number = Column(Text, nullable=False)
-    unit = Column(Text, nullable=False)
-    position = Column(Text, nullable=False)
-    weapon_type = Column(Text, nullable=False)
-    weapon_serial = Column(Text, nullable=False)
-    weapon_location = Column(Text, nullable=False)
-    weapon_condition = Column(Text, nullable=False)
-    weapon_reason = Column(Text, nullable=True)
-    weapon_note = Column(Text, nullable=True)
-    system_id = Column(Text, nullable=False)
-    system_password = Column(Text, nullable=False)
-    system_permission = Column(Text, nullable=False)
-    fingerprint = Column(Text, nullable=False)
-
 class Ammo(Base):
     __tablename__ = "ammo"
-    __table_args__ = {'extend_existing': True}
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(Text, nullable=False)
-    category = Column(Text, nullable=False)
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    category = Column(String, nullable=False)
     quantity = Column(Integer, nullable=False)
-    location = Column(Text, nullable=False)
-    condition = Column(Text, nullable=False)
-    supply_type = Column(Text, nullable=False)
-    supplied_at = Column(Text, nullable=True)
-    consumed_at = Column(Text, nullable=True)
+    location = Column(String, nullable=False)
+    condition = Column(String, nullable=False)
+    supply_type = Column(String, nullable=False)
+    supplied_at = Column(TIMESTAMP, nullable=True)
+    consumed_at = Column(TIMESTAMP, nullable=True)
     reason = Column(Text, nullable=True)
     notes = Column(Text, nullable=True)
+
+class AmmoCreate(BaseModel):
+    name: str
+    category: str
+    quantity: int
+    location: str
+    condition: str
+    supply_type: str
+    supplied_at: Optional[str] = None
+    consumed_at: Optional[str] = None
+    reason: Optional[str] = None
+    notes: Optional[str] = None
