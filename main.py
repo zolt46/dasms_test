@@ -7,7 +7,7 @@ from typing import List
 from pydantic import BaseModel
 
 from database import get_async_session
-from models import PersonnelWeapon, Ammo
+from models import PersonnelWeapon, Ammo, AmmoCreate
 
 app = FastAPI()
 
